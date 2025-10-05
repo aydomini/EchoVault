@@ -10,7 +10,7 @@
 
 **End-to-End Encrypted Multi-Room Chat Application Built on Cloudflare Workers and Durable Objects**
 
-[中文](README.md) | [🎮 Interactive Demo](https://echovault-chat.aydomini.workers.dev/demo.html) | [Live Demo](https://echovault-chat.aydomini.workers.dev) | [Quick Start](#-quick-start) | [Report Issues](https://github.com/aydomini/EchoVault/issues)
+[中文](README.md) | [🎮 Interactive Demo](https://aydomini.github.io/EchoVault/) | [Quick Start](#-quick-start) | [Report Issues](https://github.com/aydomini/EchoVault/issues)
 
 </div>
 
@@ -18,55 +18,37 @@
 
 ## ✨ Key Features
 
-### 🔒 Security & Encryption
-- **End-to-end Encryption**: AES-GCM-256 (messages) + ECDH P-256 (nickname metadata)
-- **Digital Signatures**: ECDSA signatures prevent tampering
-- **Anti-Replay**: Nonce timestamp verification (5-second window) + server time sync
-- **Key Derivation**: PBKDF2-SHA256 (200k iterations, unified standard)
-- **Key Protection**: Non-extractable Keys, cannot be exported
-- **Encrypted Password Storage**: Room passwords in IndexedDB encrypted with device key (200k PBKDF2)
-- **Security Headers**: CSP prevents XSS
-- **Rate Limiting**:
-  - Regular messages: 15 msgs/sec
-  - File chunks: Fixed 20 chunks/sec (unified for all room sizes)
-  - Message size validation: 100KB limit
-- **Zero-Knowledge Server**: Only forwards ciphertext
-- **Optional Password**: Room password optional (recommend 8+ chars), backup password required (12+ chars)
-- **Production Log Protection**: Sensitive logs only output in dev environment
+### 🔐 Security & Encryption
+- **End-to-end Encryption**: AES-GCM-256 for messages + ECDH P-256 for nickname metadata
+- **Digital Signatures**: ECDSA signatures prevent message tampering
+- **Anti-Replay Protection**: Nonce timestamp verification (5-second window) + server time sync
+- **Key Protection**: PBKDF2-SHA256 key derivation (200k iterations) + Non-extractable Keys
+- **Zero-Knowledge Server**: Only forwards ciphertext, server cannot decrypt any content
+- **Security Measures**: CSP prevents XSS + Rate limiting (15 msgs/sec, 20 chunks/sec)
 
-### 💬 Functional Features
+### 💬 Chat Features
 - **Multi-Room Support**: Join up to 10 chat rooms simultaneously (max 30 people per room)
-- **File Transfer**: Encrypted chunk transfer (≤5MB), 24KB chunks, SHA-256 integrity verification
-  - Room-level limit: Max 1 concurrent sender
-  - Fixed transfer speed: 15 chunks/sec, ~14s/5MB
-  - iOS optimization: Wake Lock API prevents background throttling, dedicated prompts
-  - Supports file description (input text as description)
-  - Supports cancel sending, auto slot release
-  - Blob auto-expiration (releases memory after 30 minutes)
-  - Reliability guarantee: Auto-detect chunk loss, auto-abort on failure
-- **Sender Disconnect Auto-Terminate**: Receivers immediately detect sender disconnect and stop waiting
-- **Real-time Communication**: WebSocket full duplex
-- **Smart Reconnection**: Exponential backoff reconnection (max 15 attempts) + network online/offline detection
-- **Connection Status Indicator**: Real-time status display (Connected/Reconnecting/Disconnected)
-- **Encrypted Backup**: Export/import v2 format (file metadata only)
-- **Heartbeat Detection**: 20s ping + 60s timeout (no power-saving logic)
-- **Room Management**: Auto-cleanup idle rooms after 30 minutes
+- **File Transfer**: Encrypted chunk transfer (≤5MB), SHA-256 integrity verification, iOS optimized
+- **Real-time Communication**: WebSocket full duplex + Smart reconnection (max 15 attempts)
+- **Encrypted Backup**: Export/import encrypted backup files (file metadata only)
+- **Room Management**: Auto-cleanup idle rooms, auto-terminate on sender disconnect
 
 ### 🎨 User Experience
 - **Responsive Design**: Desktop 3-card layout, mobile adaptive
-- **Theme Toggle**: Light/dark mode
-- **Multi-language**: Chinese/English
-- **Telegram-style Avatars**: Initial letter + gradient color auto-generation
-- **System Messages**: Auto-clear after 30 seconds
-- **Unread Notifications**: Real-time unread count display
-- **Network Switch Support**: Auto-reconnect on WiFi/4G switch, up to 15 retries
+- **Theme & Language**: Light/dark mode + Multi-language support (Chinese/English)
+- **Smart Interactions**: Connection status indicator + Unread notifications + Auto-clear system messages
+- **Personalization**: Telegram-style avatars (initial letter + gradient auto-generation)
+
+### ⚡ Performance Optimization
+- **Transfer Control**: Fixed transfer rates prevent overload
+- **Memory Management**: Blob auto-expiration, auto-detect chunk loss
+- **Network Adaptation**: Auto-reconnect on WiFi/4G switch
+- **Heartbeat Detection**: 20s ping + 60s timeout (file transfer friendly)
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Node.js 16+
-- Cloudflare account (free tier)
-- Wrangler CLI
+<details>
+<summary>📋 Click to expand detailed deployment steps</summary>
 
 ### Local Development
 ```bash
@@ -75,71 +57,30 @@ npm run dev
 ```
 Visit `http://localhost:8787`
 
-### Deploy to Cloudflare
-```bash
-npm run deploy
-```
+### Automated Deployment (Recommended)
 
-## 🤖 Automated Deployment (GitHub Actions)
-
-This project supports GitHub Actions automated deployment and synchronization.
-
-### 1️⃣ Auto Deploy to Cloudflare Workers
-
-**Trigger**: Automatically deploys when pushing code to `main` branch
-
-#### Configuration Steps
-
-**Step 1: Get Cloudflare API Token**
+**Step 1: Get Cloudflare Credentials**
 1. Login to [Cloudflare Dashboard](https://dash.cloudflare.com/)
-2. `My Profile` → `API Tokens` → `Create Token`
-3. Select `Edit Cloudflare Workers` template
-4. Configure permissions → `Create Token` → Copy token
+2. Get your `API Token` and `Account ID`
 
-**Step 2: Get Cloudflare Account ID**
-1. View `Account ID` on the right side of Cloudflare Dashboard homepage
+**Step 2: Configure GitHub Secrets**
+In repository Settings → Secrets, add:
+- `CLOUDFLARE_API_TOKEN`: Your API Token
+- `CLOUDFLARE_ACCOUNT_ID`: Your Account ID
 
-**Step 3: Configure GitHub Secrets**
-1. GitHub repo → `Settings` → `Secrets and variables` → `Actions`
-2. Add two secrets:
-   - `CLOUDFLARE_API_TOKEN`: Your API Token
-   - `CLOUDFLARE_ACCOUNT_ID`: Your Account ID
-
-**Step 4: Push Code to Auto Deploy**
+**Step 3: Push Code to Auto Deploy**
 ```bash
 git add .
 git commit -m "deploy"
 git push origin main
 ```
 
-Or manually trigger `Deploy to Cloudflare Workers` in GitHub Actions page
-
-### 2️⃣ Auto Sync Upstream Updates (Fork Users)
-
-**Trigger**: Daily automatic check for updates, or manual trigger
-
-#### Fork User Configuration Steps
-
-**Step 1: Modify Upstream Repository**
-
-Edit `.github/workflows/sync-fork.yml`:
-```yaml
-upstream_sync_repo: aydomini/EchoVault  # Already configured to original repo
+### Manual Deployment
+```bash
+npm run deploy
 ```
 
-**Fork users don't need to modify this configuration**, use directly for auto sync.
-
-**Step 2: Enable Actions**
-1. After forking, go to your repository
-2. `Actions` tab → Click to enable workflows
-
-**Step 3: Configure Permissions**
-1. `Settings` → `Actions` → `General`
-2. `Workflow permissions` → Select `Read and write permissions`
-
-**Step 4: Test Sync**
-1. `Actions` → `Sync Fork from Upstream` → `Run workflow`
-2. View sync results
+</details>
 
 ## 📁 Project Structure
 
@@ -172,79 +113,6 @@ EchoVault/
 - **Vanilla JavaScript**: No framework
 - **IndexedDB**: Local storage
 - **CSS Variables**: Theme system
-
-## 🛡️ Security Mechanisms
-
-### Encryption Flow
-
-#### 1️⃣ Key Derivation
-```
-User Password + Room ID → PBKDF2-SHA256(200,000 iterations) → AES-256 Key
-                                                                  ↓
-                                                          Non-extractable (cannot export)
-```
-
-#### 2️⃣ Message Encryption
-```
-Original Message → JSON Serialization → Random IV(12 bytes) → AES-GCM-256 Encryption
-                                                                ↓
-                                                        {Ciphertext, IV}
-```
-
-#### 3️⃣ Signature & Verification
-```
-Encrypted Data → ECDSA Signature(P-256) → Signature Value
-                                            ↓
-                    Timestamp(server sync) + Random → Nonce Hash(5-second window)
-```
-
-#### 4️⃣ Transmission & Decryption
-```
-{Ciphertext, IV, Signature, Nonce} → WebSocket → Server Relay (ciphertext only)
-                                                    ↓
-                            Recipient: Verify Signature → Verify Nonce → AES-GCM Decrypt → Original Message
-```
-
-#### 5️⃣ Nickname Encryption (Metadata Protection)
-```
-ECDH Key Exchange(P-256) → Shared Key → Encrypt Nickname → Server cannot see real nickname
-```
-
-#### 6️⃣ File Transfer
-```
-File → SHA-256 Hash → AES-GCM Encrypt → 24KB Chunks → Chunk Transfer
-                                                        ↓
-                            Recipient: Reassemble → Verify Hash → Decrypt → Original File
-```
-
-#### 7️⃣ Backup Encryption
-```
-Backup Data(with file metadata) → PBKDF2-SHA256(200k iterations) → AES-GCM Encrypt → Encrypted Backup File
-```
-
-### Threat Model & Security Boundaries
-
-EchoVault provides end-to-end encryption, but as a browser application has inherent limitations:
-
-#### ✅ Protected Against
-- **Network Eavesdropping**: TLS + AES-GCM-256 end-to-end encryption
-- **Server Breach**: Server only forwards ciphertext, no decryption capability
-- **Man-in-the-Middle**: ECDSA signatures verify message integrity
-- **Replay Attacks**: Nonce + timestamp (5-second window)
-- **XSS Attacks**: CSP + HTML escaping + textContent API
-- **Brute Force**: PBKDF2 200k iterations + rate limiting
-
-#### ❌ Cannot Protect Against
-- **Physical Access**: Cannot prevent DevTools from reading memory/storage
-- **Malicious Extensions**: Can read page memory and localStorage
-- **System Malware**: Can dump browser process memory
-- **Browser Compromise**: Common limitation of all web applications
-
-#### 💡 Security Recommendations
-- **Device**: Only use on trusted devices, enable screen lock
-- **Browser**: Use mainstream browsers, carefully install extensions
-- **Password**: Room password 8+ chars, backup password 12+ chars (require letters+numbers)
-- **Data**: Regularly export encrypted backups, exit room after sensitive conversations
 
 
 ## 📱 User Guide

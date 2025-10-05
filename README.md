@@ -10,7 +10,7 @@
 
 **端到端加密的多房间聊天应用，基于 Cloudflare Workers 和 Durable Objects 构建**
 
-[English](README_EN.md) | [🎮 交互式 Demo](https://aydomini.github.io/EchoVault/) | [在线演示](https://echovault-chat.aydomini.workers.dev) | [快速开始](#-快速开始) | [问题反馈](https://github.com/aydomini/EchoVault/issues)
+[English](README_EN.md) | [🎮 交互式 Demo](https://aydomini.github.io/EchoVault/) | [快速开始](#-快速开始) | [问题反馈](https://github.com/aydomini/EchoVault/issues)
 
 </div>
 
@@ -18,55 +18,37 @@
 
 ## ✨ 核心特性
 
-### 🔒 安全与加密
-- **端到端加密**：AES-GCM-256加密（消息内容）+ ECDH P-256（昵称元数据）
-- **数字签名**：ECDSA签名防消息篡改
+### 🔐 安全加密
+- **端到端加密**：AES-GCM-256加密消息 + ECDH P-256加密昵称元数据
+- **数字签名**：ECDSA签名防止消息篡改
 - **防重放攻击**：Nonce时间戳验证（5秒窗口）+ 服务器时间同步
-- **密钥派生**：PBKDF2-SHA256（200k迭代，统一标准）
-- **密钥保护**：Non-extractable Keys，无法导出
-- **密码加密存储**：IndexedDB中的房间密码使用设备密钥加密（200k PBKDF2）
-- **安全头**：CSP防XSS
-- **速率限制**：
-  - 普通消息：15条/秒
-  - 文件chunks：固定20 chunks/秒（所有房间统一）
-  - 消息大小验证：100KB限制
-- **零知识服务器**：仅转发密文
-- **密码可选**：房间密码可选（建议8+字符），备份密码必需（12+字符）
-- **生产日志保护**：敏感日志仅在开发环境输出
+- **密钥保护**：PBKDF2-SHA256密钥派生（200k迭代）+ Non-extractable Keys
+- **零知识服务器**：仅转发密文，服务器无法解密任何内容
+- **安全防护**：CSP防XSS + 速率限制（消息15条/秒，文件20 chunks/秒）
 
-### 💬 功能特性
-- **多房间支持**：同时加入最多10个聊天室（每个房间最多30人）
-- **文件传输**：加密分片传输（≤5MB），24KB分块，SHA-256完整性校验
-  - 房间级限制：同时最多1人发送文件
-  - 固定传输速率：15 chunks/秒，约14秒/5MB
-  - iOS 优化：Wake Lock API 防止后台节流，专属提示
-  - 支持文件描述（输入框文字作为描述）
-  - 支持取消发送，自动槽位释放
-  - Blob自动过期（30分钟后释放内存）
-  - 可靠性保证：自动检测chunk丢失，失败自动中止
-- **实时通信**：WebSocket全双工
-- **智能重连**：指数退避重连（最多15次）+ 网络在线/离线自动检测
-- **连接状态指示器**：实时显示连接状态（已连接/重连中/已断线）
-- **加密备份**：导出/导入v2格式（仅保存文件元数据）
-- **心跳检测**：20s ping + 60s超时（文件传输友好）
-- **房间管理**：空房间30分钟自动清理
-- **发送方断开自动终止**：接收方立即感知发送方断开并停止等待
+### 💬 聊天功能
+- **多房间支持**：同时加入最多10个聊天室（每房间最多30人）
+- **文件传输**：加密分片传输（≤5MB），SHA-256完整性校验，iOS优化
+- **实时通信**：WebSocket全双工 + 智能重连（最多15次）
+- **加密备份**：导出/导入加密备份文件（仅保存文件元数据）
+- **房间管理**：空房间自动清理，发送方断开自动终止传输
 
 ### 🎨 用户体验
-- **响应式设计**：桌面 3 卡片，移动端自适应
-- **主题切换**：白天/夜间模式
-- **多语言**：中文/English
-- **Telegram 风格头像**：首字母+渐变色自动生成
-- **系统消息**：30秒自动清除
-- **未读消息提醒**：实时显示未读数
-- **网络切换支持**：WiFi/4G切换自动重连，最多重试15次
+- **响应式设计**：桌面3卡片布局，移动端自适应
+- **主题切换**：白天/夜间模式 + 多语言支持（中文/English）
+- **智能交互**：连接状态指示 + 未读消息提醒 + 系统消息自动清除
+- **个性化**：Telegram风格头像（首字母+渐变色自动生成）
+
+### ⚡ 性能优化
+- **传输控制**：固定传输速率防止过载
+- **内存管理**：Blob自动过期，chunk丢失自动检测
+- **网络适应**：WiFi/4G切换自动重连
+- **心跳检测**：20s ping + 60s超时（文件传输友好）
 
 ## 🚀 快速开始
 
-### 前置要求
-- Node.js 16+
-- Cloudflare 账号（免费层）
-- Wrangler CLI
+<details>
+<summary>📋 点击展开详细部署步骤</summary>
 
 ### 本地开发
 ```bash
@@ -75,71 +57,30 @@ npm run dev
 ```
 访问 `http://localhost:8787`
 
-### 部署到 Cloudflare
-```bash
-npm run deploy
-```
+### 自动部署（推荐）
 
-## 🤖 自动化部署（GitHub Actions）
-
-本项目支持 GitHub Actions 自动部署和自动同步。
-
-### 1️⃣ 自动部署到 Cloudflare Workers
-
-**触发条件**：推送代码到 `main` 分支时自动部署
-
-#### 配置步骤
-
-**步骤 1：获取 Cloudflare API Token**
+**步骤 1：获取 Cloudflare 凭据**
 1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/)
-2. `My Profile` → `API Tokens` → `Create Token`
-3. 选择 `Edit Cloudflare Workers` 模板
-4. 配置权限 → `Create Token` → 复制 Token
+2. 获取 `API Token` 和 `Account ID`
 
-**步骤 2：获取 Cloudflare Account ID**
-1. Cloudflare Dashboard 主页右侧查看 `Account ID`
+**步骤 2：配置 GitHub Secrets**
+在仓库 Settings → Secrets 中添加：
+- `CLOUDFLARE_API_TOKEN`：你的 API Token
+- `CLOUDFLARE_ACCOUNT_ID`：你的 Account ID
 
-**步骤 3：配置 GitHub Secrets**
-1. GitHub 仓库 → `Settings` → `Secrets and variables` → `Actions`
-2. 添加两个 secrets：
-   - `CLOUDFLARE_API_TOKEN`：你的 API Token
-   - `CLOUDFLARE_ACCOUNT_ID`：你的 Account ID
-
-**步骤 4：推送代码自动部署**
+**步骤 3：推送代码自动部署**
 ```bash
 git add .
 git commit -m "deploy"
 git push origin main
 ```
 
-或在 GitHub Actions 页面手动触发 `Deploy to Cloudflare Workers`
-
-### 2️⃣ 自动同步上游更新（Fork 用户）
-
-**触发条件**：每天自动检查更新，或手动触发
-
-#### Fork 用户配置步骤
-
-**步骤 1：修改上游仓库地址**
-
-编辑 `.github/workflows/sync-fork.yml`：
-```yaml
-upstream_sync_repo: aydomini/EchoVault  # 已配置为原作者仓库
+### 手动部署
+```bash
+npm run deploy
 ```
 
-**Fork 用户无需修改此配置**，直接使用即可自动同步更新。
-
-**步骤 2：启用 Actions**
-1. Fork 后进入你的仓库
-2. `Actions` 标签 → 点击启用 workflows
-
-**步骤 3：配置权限**
-1. `Settings` → `Actions` → `General`
-2. `Workflow permissions` → 选择 `Read and write permissions`
-
-**步骤 4：测试同步**
-1. `Actions` → `Sync Fork from Upstream` → `Run workflow`
-2. 查看同步结果
+</details>
 
 ## 📁 项目结构
 
@@ -172,79 +113,6 @@ EchoVault/
 - **Vanilla JavaScript**：无框架
 - **IndexedDB**：本地存储
 - **CSS Variables**：主题系统
-
-## 🛡️ 安全机制
-
-### 加密流程
-
-#### 1️⃣ 密钥派生
-```
-用户密码 + 房间ID → PBKDF2-SHA256(200,000次迭代) → AES-256密钥
-                                                  ↓
-                                          Non-extractable（无法导出）
-```
-
-#### 2️⃣ 消息加密
-```
-原始消息 → JSON序列化 → 随机IV(12字节) → AES-GCM-256加密
-                                           ↓
-                                    {密文, IV}
-```
-
-#### 3️⃣ 签名与验证
-```
-加密数据 → ECDSA签名(P-256) → 签名值
-                              ↓
-         时间戳(同步服务器) + 随机数 → Nonce哈希(5秒窗口)
-```
-
-#### 4️⃣ 传输与解密
-```
-{密文, IV, 签名, Nonce} → WebSocket → 服务器转发（仅密文）
-                                        ↓
-                              接收方：验证签名 → 验证Nonce → AES-GCM解密 → 原始消息
-```
-
-#### 5️⃣ 昵称加密（元数据保护）
-```
-ECDH密钥交换(P-256) → 共享密钥 → 加密昵称 → 服务器无法看到真实昵称
-```
-
-#### 6️⃣ 文件传输
-```
-文件 → SHA-256哈希 → AES-GCM加密 → 24KB分块 → 逐块传输
-                                              ↓
-                        接收方：重组 → 验证哈希 → 解密 → 原始文件
-```
-
-#### 7️⃣ 备份加密
-```
-备份数据(含文件元数据) → PBKDF2-SHA256(200k迭代) → AES-GCM加密 → 加密备份文件
-```
-
-### 威胁模型与安全边界
-
-EchoVault 提供端到端加密，但作为浏览器应用存在固有限制：
-
-#### ✅ 可防护
-- **网络窃听**：TLS + AES-GCM-256 端到端加密
-- **服务器泄露**：服务器仅转发密文，无解密能力
-- **中间人攻击**：ECDSA 签名验证消息完整性
-- **重放攻击**：Nonce + 时间戳（5秒窗口）
-- **XSS 攻击**：CSP + HTML 转义 + textContent API
-- **暴力破解**：PBKDF2 200k 迭代 + 速率限制
-
-#### ❌ 无法防护
-- **物理访问**：无法防止 DevTools 读取内存/存储
-- **恶意扩展**：可读取页面内存和 localStorage
-- **系统恶意软件**：可 dump 浏览器进程内存
-- **浏览器攻陷**：所有 Web 应用的共同限制
-
-#### 💡 安全建议
-- **设备**：仅在可信设备使用，启用锁屏保护
-- **浏览器**：使用主流浏览器，谨慎安装扩展
-- **密码**：房间密码 8+ 字符，备份密码 12+ 字符（需含字母+数字）
-- **数据**：定期导出加密备份，敏感对话后退出房间
 
 
 ## 📱 使用指南
