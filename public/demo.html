@@ -466,6 +466,24 @@
       gap: 12px;
     }
 
+    .back-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 18px;
+      padding: 8px;
+      margin-right: 8px;
+      border-radius: 6px;
+      transition: all 0.2s;
+      display: none;
+    }
+
+    .back-btn:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
     .icon-btn {
       background: transparent;
       border: none;
@@ -813,13 +831,40 @@
 
       .sidebar {
         flex: initial;
-        height: 40%;
+        height: 50%;
         gap: 10px;
       }
 
+      .user-card {
+        height: 60px;
+        flex-shrink: 0;
+      }
+
+      .room-card {
+        flex: 1;
+        min-height: 0;
+      }
+
       .chat-area {
+        display: none;
         flex: initial;
-        height: 55%;
+        height: 50%;
+      }
+
+      .chat-area.mobile-active {
+        display: flex;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 100dvh;
+        z-index: 100;
+        border-radius: 0;
+        margin: 0;
+      }
+
+      .back-btn {
+        display: block !important;
       }
 
       .message {
@@ -877,6 +922,7 @@
     <!-- Chat Area -->
     <div class="chat-area" id="chatArea">
       <div class="chat-header">
+        <button class="back-btn" onclick="closeMobileChat()" style="display: none;">←</button>
         <div class="chat-header-content">
           <div class="chat-title-row">
             <div class="chat-title" id="chatTitle">技术讨论</div>
@@ -1063,8 +1109,17 @@
       // Clear unread
       room.unread = 0;
 
+      // Mobile: show chat area
+      if (window.innerWidth <= 768) {
+        document.getElementById('chatArea').classList.add('mobile-active');
+      }
+
       renderRooms();
       renderMessages();
+    }
+
+    function closeMobileChat() {
+      document.getElementById('chatArea').classList.remove('mobile-active');
     }
 
     function setupEventListeners() {
