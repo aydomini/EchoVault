@@ -1,0 +1,23 @@
+{
+  "name": "echovault-chat",
+  "version": "1.0.0",
+  "description": "End-to-end encrypted multi-room chat using Cloudflare Workers",
+  "main": "src/index.js",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "dev": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "keywords": [
+    "chat",
+    "e2e",
+    "websocket",
+    "cloudflare",
+    "durable-objects"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^4.42.0"
+  }
+}
