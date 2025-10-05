@@ -130,14 +130,10 @@ EchoVault/
 - **Export**: Settings → Export Backup → Set password → Download
 - **Import**: Settings → Import Backup → Select file → Enter password
 
-## 🌐 Deployment Configuration
-
-### Cloudflare Free Tier
-- ✅ 100,000 requests/day
-- ✅ 1GB Durable Objects storage
-- ✅ 10ms CPU time/request
-
 ## 🐛 Troubleshooting
+
+<details>
+<summary>🔧 Click to expand common issue solutions</summary>
 
 ### Deployment Related
 
@@ -169,13 +165,7 @@ EchoVault/
 - Sending too fast (>15 msg/s)
 - Wait a moment and retry
 
-## 📊 Performance Metrics
-
-| Metric | Value |
-|--------|-------|
-| Message Latency | <100ms |
-| File Transfer | 20s/5MB |
-| Connection Establish | ~200ms |
+</details>
 
 ## 📄 Open Source License
 
