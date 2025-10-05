@@ -1000,7 +1000,7 @@
               <span class="status-text">已连接</span>
             </div>
           </div>
-          <div class="chat-meta" id="chatMeta">5/5 人在线</div>
+          <div class="chat-meta" id="chatMeta">5/30 人在线</div>
         </div>
         <div class="chat-actions" style="display: none;">
           <button class="icon-btn" title="主题切换" id="themeBtn">🌙</button>
@@ -1057,9 +1057,9 @@
   <script>
     // Mock data
     const rooms = [
-      { id: 'tech', name: '技术讨论', preview: 'Alice: 这个项目的架构很棒！', unread: 3, members: 5 },
-      { id: 'casual', name: '闲聊', preview: 'Bob: 今天天气不错', unread: 0, members: 3 },
-      { id: 'project', name: '项目组', preview: 'Charlie: 明天开会讨论需求', unread: 1, members: 7 }
+      { id: 'tech', name: '技术讨论', preview: 'Alice: 这个项目的架构很棒！', unread: 3, members: 5, maxMembers: 30 },
+      { id: 'casual', name: '闲聊', preview: 'Bob: 今天天气不错', unread: 0, members: 3, maxMembers: 30 },
+      { id: 'project', name: '项目组', preview: 'Charlie: 明天开会讨论需求', unread: 1, members: 7, maxMembers: 30 }
     ];
 
     const users = [
@@ -1186,7 +1186,7 @@
       // Update UI
       document.getElementById('chatTitle').textContent = room.name;
       document.getElementById('currentRoomName').textContent = room.name;
-      document.getElementById('chatMeta').textContent = `${room.members}/${room.members} 人在线`;
+      document.getElementById('chatMeta').textContent = `${room.members}/${room.maxMembers} 人在线`;
 
       // Clear unread
       room.unread = 0;
