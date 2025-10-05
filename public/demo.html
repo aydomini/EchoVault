@@ -832,13 +832,14 @@
 
       .sidebar {
         flex-direction: column;
+        gap: 10px;
         height: calc(100dvh - 44px - 20px);
         overflow: hidden;
       }
 
       .user-card {
         padding: 16px;
-        height: calc((100dvh - 44px - 20px) / 7);
+        height: calc((100dvh - 44px - 20px - 10px) / 7);
         min-height: 60px;
         display: flex;
         align-items: center;
@@ -858,7 +859,7 @@
       }
 
       .room-card {
-        height: calc((100dvh - 44px - 20px) * 6 / 7);
+        height: calc((100dvh - 44px - 20px - 10px) * 6 / 7);
         display: flex;
         flex-direction: column;
       }
