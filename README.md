@@ -10,7 +10,7 @@
 
 **端到端加密的多房间聊天应用，基于 Cloudflare Workers 和 Durable Objects 构建**
 
-[English](README_EN.md) | [🎮 交互式 Demo](https://echovault-chat.aydomini.workers.dev/demo.html) | [在线演示](https://echovault-chat.aydomini.workers.dev) | [快速开始](#-快速开始) | [问题反馈](https://github.com/aydomini/EchoVault/issues)
+[English](README_EN.md) | [🎮 交互式 Demo](https://aydomini.github.io/EchoVault/) | [在线演示](https://echovault-chat.aydomini.workers.dev) | [快速开始](#-快速开始) | [问题反馈](https://github.com/aydomini/EchoVault/issues)
 
 </div>
 
