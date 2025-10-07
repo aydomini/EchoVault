@@ -5,7 +5,7 @@
 // Debug mode control (disable sensitive logs in production)
 const DEBUG_MODE = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 const secureLog = (...args) => {
-  if (DEBUG_MODE) console.log(...args);
+  if (DEBUG_MODE) secureLog(...args);
 };
 const secureWarn = (...args) => {
   if (DEBUG_MODE) console.warn(...args);
@@ -28,7 +28,7 @@ function getSessionId() {
   if (!sessionId) {
     sessionId = crypto.randomUUID();
     sessionStorage.setItem('sessionId', sessionId);
-    console.log('🔑 Generated new session ID:', sessionId);
+    secureLog('🔑 Generated new session ID:', sessionId);
   }
   return sessionId;
 }
@@ -38,7 +38,13 @@ const state = {
   currentRoomId: null,
   currentNickname: sessionStorage.getItem('currentNickname') || null, // Session-level nickname
   selectedFile: null,
-  theme: localStorage.getItem('theme') || 'light',
+  theme: (() => {
+    // Auto-detect system theme preference if no saved preference
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) return savedTheme;
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return prefersDark ? 'dark' : 'light';
+  })(),
   language: localStorage.getItem('language') || 'zh',
   privacyMode: localStorage.getItem('privacyMode') === 'true',
   deviceId: getDeviceId(), // Unique device identifier (persistent)
@@ -724,23 +730,46 @@ function createTelegramAvatar(seed) {
     seed = '?';
   }
 
-  // Telegram color palette - vibrant and distinctive colors with good contrast for white text
-  const colors = [
+  // Check if dark mode is active
+  const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
+
+  // Light mode colors (darker shades for white/light background)
+  const lightModeColors = [
     '#E63946', // Crimson Red
     '#457B9D', // Steel Blue
-    '#2A9D8F', // Teal (darker)
-    '#E76F51', // Coral (darker)
-    '#264653', // Dark Slate
-    '#D4A017', // Golden (darker)
-    '#9B59B6', // Purple (darker)
-    '#2E86AB', // Ocean Blue
-    '#F77F00', // Dark Orange
-    '#06A77D', // Green (darker)
+    '#2A9D8F', // Teal
+    '#E76F51', // Coral
+    '#0D7963', // Deep Teal (matches Mint Green family)
+    '#C09015', // Golden (darkened from #D4A017 for better contrast)
+    '#9B59B6', // Purple
+    '#226B8A', // Deep Sky Blue (matches Sky Blue family)
+    '#E66F00', // Dark Orange (darkened from #F77F00 for better contrast)
+    '#06A77D', // Green
     '#DC3545', // Bootstrap Red
-    '#1D3557', // Navy Blue
-    '#C2185B', // Pink (darker)
-    '#0077B6', // Bright Blue (darker)
+    '#D1477D', // Deep Rose (matches Light Pink family)
+    '#C2185B', // Pink
+    '#6A4C93', // Deep Purple (matches Plum family)
   ];
+
+  // Dark mode colors (brighter shades for dark background)
+  const darkModeColors = [
+    '#FF6B6B', // Bright Red
+    '#74C0FC', // Light Blue
+    '#63E6BE', // Bright Teal
+    '#FFA94D', // Bright Coral
+    '#8CE99A', // Mint Green
+    '#FFD43B', // Bright Yellow
+    '#CC5DE8', // Bright Purple
+    '#4DABF7', // Sky Blue
+    '#FFA07A', // Light Salmon
+    '#51CF66', // Light Green
+    '#FF8787', // Salmon Red
+    '#FFB6C1', // Light Pink
+    '#F783AC', // Pink
+    '#DDA0DD', // Plum
+  ];
+
+  const colors = isDarkMode ? darkModeColors : lightModeColors;
 
   // Generate consistent color index from seed
   let hash = 0;
@@ -753,10 +782,13 @@ function createTelegramAvatar(seed) {
   // Get first character (supports emoji and unicode)
   const initial = Array.from(seed)[0].toUpperCase();
 
+  // Text color: white for light mode (dark background), dark for dark mode (light background)
+  const textColor = isDarkMode ? '#1a1a1a' : 'white';
+
   const svg = `
     <svg width="128" height="128" xmlns="http://www.w3.org/2000/svg">
       <circle cx="64" cy="64" r="64" fill="${color}"/>
-      <text x="64" y="84" font-size="56" font-weight="500" fill="white" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">${initial}</text>
+      <text x="64" y="84" font-size="56" font-weight="500" fill="${textColor}" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">${initial}</text>
     </svg>
   `;
 
@@ -769,22 +801,46 @@ function getNicknameColor(seed) {
     seed = '?';
   }
 
-  const colors = [
+  // Check if dark mode is active
+  const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
+
+  // Light mode colors (darker shades for white/light background)
+  const lightModeColors = [
     '#E63946', // Crimson Red
     '#457B9D', // Steel Blue
-    '#2A9D8F', // Teal (darker)
-    '#E76F51', // Coral (darker)
-    '#264653', // Dark Slate
-    '#D4A017', // Golden (darker)
-    '#9B59B6', // Purple (darker)
-    '#2E86AB', // Ocean Blue
-    '#F77F00', // Dark Orange
-    '#06A77D', // Green (darker)
+    '#2A9D8F', // Teal
+    '#E76F51', // Coral
+    '#0D7963', // Deep Teal (matches Mint Green family)
+    '#C09015', // Golden (darkened from #D4A017 for better contrast)
+    '#9B59B6', // Purple
+    '#226B8A', // Deep Sky Blue (matches Sky Blue family)
+    '#E66F00', // Dark Orange (darkened from #F77F00 for better contrast)
+    '#06A77D', // Green
     '#DC3545', // Bootstrap Red
-    '#1D3557', // Navy Blue
-    '#C2185B', // Pink (darker)
-    '#0077B6', // Bright Blue (darker)
+    '#D1477D', // Deep Rose (matches Light Pink family)
+    '#C2185B', // Pink
+    '#6A4C93', // Deep Purple (matches Plum family)
   ];
+
+  // Dark mode colors (brighter shades for dark background)
+  const darkModeColors = [
+    '#FF6B6B', // Bright Red
+    '#74C0FC', // Light Blue
+    '#63E6BE', // Bright Teal
+    '#FFA94D', // Bright Coral
+    '#8CE99A', // Mint Green
+    '#FFD43B', // Bright Yellow
+    '#CC5DE8', // Bright Purple
+    '#4DABF7', // Sky Blue
+    '#FFA07A', // Light Salmon
+    '#51CF66', // Light Green
+    '#FF8787', // Salmon Red
+    '#FFB6C1', // Light Pink
+    '#F783AC', // Pink
+    '#DDA0DD', // Plum
+  ];
+
+  const colors = isDarkMode ? darkModeColors : lightModeColors;
 
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
@@ -907,7 +963,7 @@ class DBManager {
 
     // Note: encryptionKey is NON-EXTRACTABLE for security, so we can't save it
     // We save the encrypted password and re-derive keys when loading the room
-    console.log('💾 Saving room to IndexedDB (password encrypted, keys will be re-derived):', dataToStore.roomId);
+    secureLog('💾 Saving room to IndexedDB (password encrypted, keys will be re-derived):', dataToStore.roomId);
 
     // Now start transaction and save
     const tx = this.db.transaction('rooms', 'readwrite');
@@ -1015,7 +1071,7 @@ class DBManager {
         isOwn: message.isOwn
       };
       dataToStore.encrypted = await CryptoHelper.encrypt(sensitiveData, room.storageKey);
-      console.log('💾 Saving ENCRYPTED message to IndexedDB:', {
+      secureLog('💾 Saving ENCRYPTED message to IndexedDB:', {
         roomId: dataToStore.roomId,
         timestamp: dataToStore.timestamp,
         hasEncryptedField: !!dataToStore.encrypted,
@@ -1029,7 +1085,7 @@ class DBManager {
         file: message.file,
         isOwn: message.isOwn
       });
-      console.log('💾 Saving PLAINTEXT message to IndexedDB:', {
+      secureLog('💾 Saving PLAINTEXT message to IndexedDB:', {
         roomId: dataToStore.roomId,
         from: dataToStore.from,
         text: dataToStore.text,
@@ -1048,7 +1104,7 @@ class DBManager {
     );
 
     if (isDuplicate) {
-      console.log('Duplicate message in IndexedDB, skipping save:', message);
+      secureLog('Duplicate message in IndexedDB, skipping save:', message);
       return;
     }
 
@@ -1118,7 +1174,7 @@ class DBManager {
   }
 
   async cleanupDuplicateMessages() {
-    console.log('Cleaning up duplicate messages in IndexedDB...');
+    secureLog('Cleaning up duplicate messages in IndexedDB...');
 
     const tx = this.db.transaction('messages', 'readwrite');
     const store = tx.objectStore('messages');
@@ -1145,12 +1201,12 @@ class DBManager {
         }
 
         if (duplicateIds.length === 0) {
-          console.log('No duplicate messages found');
+          secureLog('No duplicate messages found');
           resolve(0);
           return;
         }
 
-        console.log(`Found ${duplicateIds.length} duplicate messages, deleting...`);
+        secureLog(`Found ${duplicateIds.length} duplicate messages, deleting...`);
 
         // Delete duplicates
         let deleted = 0;
@@ -1159,7 +1215,7 @@ class DBManager {
           deleteRequest.onsuccess = () => {
             deleted++;
             if (deleted === duplicateIds.length) {
-              console.log(`Deleted ${deleted} duplicate messages`);
+              secureLog(`Deleted ${deleted} duplicate messages`);
               resolve(deleted);
             }
           };
@@ -1281,11 +1337,11 @@ class RoomConnection {
   async initializeSecurity() {
     // Generate signing key pair (ECDSA)
     this.signingKeyPair = await CryptoHelper.generateSigningKeyPair();
-    console.log('🔐 Generated ECDSA signing key pair');
+    secureLog('🔐 Generated ECDSA signing key pair');
 
     // Generate ECDH key pair for key exchange
     this.ecdhKeyPair = await CryptoHelper.generateECDHKeyPair();
-    console.log('🔑 Generated ECDH key pair for E2E encryption');
+    secureLog('🔑 Generated ECDH key pair for E2E encryption');
 
     // Start nonce cleanup interval (every 10 seconds)
     this.nonceCleanupInterval = setInterval(() => {
@@ -1296,7 +1352,7 @@ class RoomConnection {
   async connect() {
     // Disconnect existing connection if any (prevent duplicate connections)
     if (this.ws) {
-      console.log('Closing existing connection before reconnecting...');
+      secureLog('Closing existing connection before reconnecting...');
       this.disconnect();
     }
 
@@ -1327,7 +1383,7 @@ class RoomConnection {
     this.connectionSuccess = false;
 
     this.ws.onopen = async () => {
-      console.log('Connected to room:', this.roomId);
+      secureLog('Connected to room:', this.roomId);
       this.reconnectAttempts = 0;
       this.startHeartbeat();
 
@@ -1354,7 +1410,7 @@ class RoomConnection {
     };
 
     this.ws.onclose = (event) => {
-      console.log('Disconnected from room:', this.roomId, 'Code:', event.code, 'Reason:', event.reason);
+      secureLog('Disconnected from room:', this.roomId, 'Code:', event.code, 'Reason:', event.reason);
       this.stopHeartbeat();
 
       // Clean up file transfer state
@@ -1374,7 +1430,7 @@ class RoomConnection {
 
       // If closed with code 1008 (nickname conflict), remove from state
       if (event.code === 1008) {
-        console.log('❌ Nickname conflict, removing room from state');
+        secureLog('❌ Nickname conflict, removing room from state');
         state.rooms.delete(this.roomId);
 
         // Show alert but stay on chat page
@@ -1445,7 +1501,7 @@ class RoomConnection {
         } else if (data.code === 'RATE_LIMIT_EXCEEDED') {
           // Mark when we received rate limit error for future chunk sending
           this.recentRateLimitError = Date.now();
-          console.log(`⚠️ Rate limit hit at ${this.recentRateLimitError}`);
+          secureLog(`⚠️ Rate limit hit at ${this.recentRateLimitError}`);
 
           const errorMsg = state.language === 'zh'
             ? '发送过于频繁，请稍后再试'
@@ -1470,7 +1526,7 @@ class RoomConnection {
         try {
           const publicKey = await CryptoHelper.importPublicKey(data.publicKey);
           this.peerPublicKeys.set(data.connectionId, publicKey);
-          console.log('🔑 Stored ECDSA public key for connection:', data.connectionId);
+          secureLog('🔑 Stored ECDSA public key for connection:', data.connectionId);
 
           // If ECDH public key is present, perform key exchange
           if (data.ecdhPublicKey) {
@@ -1480,7 +1536,7 @@ class RoomConnection {
             // Derive shared secret for E2E encryption
             const sharedSecret = await CryptoHelper.performKeyExchange(this.ecdhKeyPair, data.ecdhPublicKey);
             this.sharedSecrets.set(data.connectionId, sharedSecret);
-            console.log('🔐 Established E2E shared secret with:', data.connectionId);
+            secureLog('🔐 Established E2E shared secret with:', data.connectionId);
           }
         } catch (err) {
           console.error('Failed to import public key:', err);
@@ -1512,7 +1568,7 @@ class RoomConnection {
         this.myConnectionId = data.connectionId;
         this.onlineUsers = data.onlineUsers;
         this.reconnectAttempts = 0; // Reset reconnection counter on successful connection
-        console.log('Connected with ID:', this.myConnectionId);
+        secureLog('Connected with ID:', this.myConnectionId);
         updateUI();
         break;
 
@@ -1544,7 +1600,7 @@ class RoomConnection {
           for (const [fileId, fileData] of this.pendingFileChunks) {
             if (fileData.connectionId === data.connectionId) {
               // Sender disconnected, abort file transfer
-              console.log(`🛑 File sender ${data.nickname} disconnected, aborting file transfer ${fileId}`);
+              secureLog(`🛑 File sender ${data.nickname} disconnected, aborting file transfer ${fileId}`);
               this.pendingFileChunks.delete(fileId);
               hideFileTransferProgress(this.roomId, fileId);
 
@@ -1558,7 +1614,7 @@ class RoomConnection {
 
       case 'message':
         try {
-          console.log('📨 Received message:', {
+          secureLog('📨 Received message:', {
             from: data.from,
             connectionId: data.connectionId,
             myConnectionId: this.myConnectionId,
@@ -1576,7 +1632,7 @@ class RoomConnection {
               try {
                 const decryptedData = await CryptoHelper.decryptWithSharedKey(data.encryptedNickname, sharedSecret);
                 senderNickname = decryptedData.nickname;
-                console.log('🔓 Decrypted nickname:', senderNickname);
+                secureLog('🔓 Decrypted nickname:', senderNickname);
               } catch (err) {
                 console.error('Failed to decrypt nickname:', err);
                 senderNickname = '[Encrypted]';
@@ -1611,7 +1667,7 @@ class RoomConnection {
                 console.error('❌ Invalid signature, rejecting message from:', senderNickname);
                 return;
               }
-              console.log('✅ Signature verified for message from:', senderNickname);
+              secureLog('✅ Signature verified for message from:', senderNickname);
             } else {
               console.warn('⚠️ No public key for connection:', data.connectionId, '- cannot verify signature');
             }
@@ -1642,14 +1698,14 @@ class RoomConnection {
       case 'file_transfer_response':
         // Server responded to our file transfer request
         if (data.allowed) {
-          console.log(`✅ File transfer approved, starting send for file ${data.fileId}`);
+          secureLog(`✅ File transfer approved, starting send for file ${data.fileId}`);
           if (this.pendingFileSend && this.pendingFileSend.fileId === data.fileId) {
             await this.startFileSend(data.fileId, this.pendingFileSend.file, this.pendingFileSend.description);
             this.pendingFileSend = null;
           }
         } else {
           // Rejected - too many concurrent transfers
-          console.log(`❌ File transfer rejected: ${data.reason}`);
+          secureLog(`❌ File transfer rejected: ${data.reason}`);
 
           const rejectMsg = state.language === 'zh'
             ? `当前有 ${data.activeCount} 人正在发送文件（最多${data.maxConcurrent}人），请稍后再试。`
@@ -1664,7 +1720,7 @@ class RoomConnection {
 
       case 'file_transfer_cancelled':
         // File transfer was cancelled by sender
-        console.log(`🛑 File transfer cancelled: ${data.fileId}`);
+        secureLog(`🛑 File transfer cancelled: ${data.fileId}`);
 
         // Clean up pending file chunks if receiving
         if (this.pendingFileChunks.has(data.fileId)) {
@@ -1686,22 +1742,22 @@ class RoomConnection {
     const { fileId, chunkIndex, totalChunks, encryptedChunk, metadata } = data;
 
     // Debug log for tracking chunks
-    console.log(`📥 Received chunk ${chunkIndex + 1}/${totalChunks} for file ${fileId}`);
+    secureLog(`📥 Received chunk ${chunkIndex + 1}/${totalChunks} for file ${fileId}`);
 
     // Skip if this is our own file chunk (we're the sender)
     if (data.connectionId === this.myConnectionId) {
-      console.log(`⏭️ Skipping own file chunk ${chunkIndex + 1}/${totalChunks}`);
+      secureLog(`⏭️ Skipping own file chunk ${chunkIndex + 1}/${totalChunks}`);
       return;
     }
 
     // Send heartbeat every 10 chunks during file transfer to prevent timeout
     if (chunkIndex % 10 === 0 && this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({ type: 'ping' }));
-      console.log(`💓 Sent heartbeat during file transfer (chunk ${chunkIndex + 1}/${totalChunks})`);
+      secureLog(`💓 Sent heartbeat during file transfer (chunk ${chunkIndex + 1}/${totalChunks})`);
     }
 
     if (!this.pendingFileChunks.has(fileId)) {
-      console.log(`🆕 First chunk for file ${fileId}, initializing...`);
+      secureLog(`🆕 First chunk for file ${fileId}, initializing...`);
       // First chunk for this file
       if (metadata && metadata.iv && metadata.data) {
         // First chunk arrived with metadata
@@ -1738,7 +1794,7 @@ class RoomConnection {
         }, 120000); // 2 minutes timeout
       } else {
         // Later chunk arrived first (out of order), create placeholder
-        console.log(`⚠️ Chunk ${chunkIndex + 1} arrived before first chunk (out of order)`);
+        secureLog(`⚠️ Chunk ${chunkIndex + 1} arrived before first chunk (out of order)`);
         this.pendingFileChunks.set(fileId, {
           chunks: new Array(totalChunks),
           metadata: null, // Will be filled when first chunk arrives
@@ -1753,7 +1809,7 @@ class RoomConnection {
       // File already exists, update metadata if this is the first chunk
       const fileData = this.pendingFileChunks.get(fileId);
       if (metadata && metadata.iv && metadata.data && !fileData.metadata) {
-        console.log(`📝 Received metadata with chunk ${chunkIndex + 1}`);
+        secureLog(`📝 Received metadata with chunk ${chunkIndex + 1}`);
         fileData.metadata = await CryptoHelper.decrypt(metadata, this.encryptionKey);
         showFileTransferProgress(this.roomId, fileData.metadata.name, totalChunks, 'receive', fileId);
       }
@@ -1774,7 +1830,7 @@ class RoomConnection {
     fileData.receivedChunks++;
     fileData.lastChunkTime = Date.now(); // Update last received time
 
-    console.log(`✅ Chunk ${chunkIndex + 1}/${totalChunks} saved (receivedChunks: ${fileData.receivedChunks}, chunkIndex: ${chunkIndex})`);
+    secureLog(`✅ Chunk ${chunkIndex + 1}/${totalChunks} saved (receivedChunks: ${fileData.receivedChunks}, chunkIndex: ${chunkIndex})`);
 
     // Update progress
     if (fileData.metadata) {
@@ -1782,9 +1838,9 @@ class RoomConnection {
     };
 
     if (fileData.receivedChunks === totalChunks) {
-      console.log(`✨ All ${totalChunks} chunks counted, verifying completeness...`);
+      secureLog(`✨ All ${totalChunks} chunks counted, verifying completeness...`);
       if (fileData.duplicateCount > 0) {
-        console.log(`📊 Statistics: ${fileData.duplicateCount} duplicate chunks were ignored`);
+        secureLog(`📊 Statistics: ${fileData.duplicateCount} duplicate chunks were ignored`);
       }
 
       // All chunks received count matches, but check for gaps
@@ -1809,7 +1865,7 @@ class RoomConnection {
         return;
       }
 
-      console.log(`🎉 All ${totalChunks} chunks received successfully, reconstructing file...`);
+      secureLog(`🎉 All ${totalChunks} chunks received successfully, reconstructing file...`);
 
       // All chunks received, check if we have metadata
       if (!fileData.metadata) {
@@ -1843,7 +1899,7 @@ class RoomConnection {
             this.pendingFileChunks.delete(fileId);
             return;
           }
-          console.log('✅ File integrity verified');
+          secureLog('✅ File integrity verified');
         }
 
         const messageWithFile = {
@@ -1869,7 +1925,7 @@ class RoomConnection {
             m.timestamp === messageWithFile.timestamp
           );
           if (msg && msg.file && msg.file.blob) {
-            console.log(`🗑️ Auto-releasing blob for file: ${msg.file.name} (30 min expired)`);
+            secureLog(`🗑️ Auto-releasing blob for file: ${msg.file.name} (30 min expired)`);
             msg.file.blob = null;
             msg.file.expired = true;
             if (state.currentRoomId === this.roomId) {
@@ -1977,7 +2033,7 @@ class RoomConnection {
     }
 
     // Request file transfer permission from server
-    console.log(`📋 Requesting file transfer permission for ${file.name}...`);
+    secureLog(`📋 Requesting file transfer permission for ${file.name}...`);
 
     // Store file and description temporarily while waiting for server response
     this.pendingFileSend = {
@@ -2022,7 +2078,7 @@ class RoomConnection {
     if ('wakeLock' in navigator) {
       try {
         wakeLock = await navigator.wakeLock.request('screen');
-        console.log('🔓 Wake lock acquired for file transfer');
+        secureLog('🔓 Wake lock acquired for file transfer');
       } catch (err) {
         console.warn('⚠️ Could not acquire wake lock:', err);
       }
@@ -2078,7 +2134,7 @@ class RoomConnection {
         }
 
         // All chunks sent, notify server and add file message locally for sender
-        console.log(`✅ All ${chunks.length} chunks sent (${failedChunks} failed), notifying server and adding file message locally`);
+        secureLog(`✅ All ${chunks.length} chunks sent (${failedChunks} failed), notifying server and adding file message locally`);
 
         // Notify server that file transfer is complete
         this.ws.send(JSON.stringify({
@@ -2111,7 +2167,7 @@ class RoomConnection {
             m.timestamp === senderMessage.timestamp
           );
           if (msg && msg.file && msg.file.blob) {
-            console.log(`🗑️ Auto-releasing blob for sent file: ${msg.file.name} (30 min expired)`);
+            secureLog(`🗑️ Auto-releasing blob for sent file: ${msg.file.name} (30 min expired)`);
             msg.file.blob = null;
             msg.file.expired = true;
             if (state.currentRoomId === this.roomId) {
@@ -2129,7 +2185,7 @@ class RoomConnection {
           // Release wake lock if acquired
           if (wakeLock) {
             wakeLock.release().then(() => {
-              console.log('🔒 Wake lock released after file transfer completion');
+              secureLog('🔒 Wake lock released after file transfer completion');
             });
           }
         }, 1000);
@@ -2176,7 +2232,7 @@ class RoomConnection {
 
           // Log less frequently to reduce console spam
           if (currentIndex % 50 === 0 || currentIndex === chunks.length - 1) {
-            console.log(`📤 Sent chunk ${currentIndex + 1}/${chunks.length} (${messageSize} bytes)`);
+            secureLog(`📤 Sent chunk ${currentIndex + 1}/${chunks.length} (${messageSize} bytes)`);
           }
 
           this.currentFileTransfer.sentChunks = currentIndex + 1;
@@ -2254,7 +2310,7 @@ class RoomConnection {
     );
 
     if (isDuplicate) {
-      console.log('Duplicate message detected, skipping:', message);
+      secureLog('Duplicate message detected, skipping:', message);
       return;
     }
 
@@ -2281,7 +2337,7 @@ class RoomConnection {
         description: message.file.description || '' // Save description
         // blob is NOT saved - only available in current session
       };
-      console.log('💾 Saving file metadata only (blob excluded):', {
+      secureLog('💾 Saving file metadata only (blob excluded):', {
         name: message.file.name,
         size: formatFileSize(message.file.size)
       });
@@ -2328,7 +2384,7 @@ class RoomConnection {
     // 页面可见性变化时立即发送心跳（帮助快速恢复）
     this.visibilityHandler = () => {
       if (!document.hidden && this.ws && this.ws.readyState === WebSocket.OPEN) {
-        console.log('📱 Page visible, sending heartbeat');
+        secureLog('📱 Page visible, sending heartbeat');
         this.lastPingTime = Date.now();
         this.ws.send(JSON.stringify({ type: 'ping' }));
       }
@@ -2350,14 +2406,14 @@ class RoomConnection {
   attemptReconnect() {
     // Limit reconnections to prevent connection spam (increased for network switches)
     if (this.reconnectAttempts >= 15) {
-      console.log(`Max reconnection attempts (15) reached for room ${this.roomId}`);
+      secureLog(`Max reconnection attempts (15) reached for room ${this.roomId}`);
       updateUI(); // Update UI to show disconnected state
       return;
     }
 
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
     setTimeout(() => {
-      console.log(`Reconnecting to room ${this.roomId} (attempt ${this.reconnectAttempts + 1}/15)...`);
+      secureLog(`Reconnecting to room ${this.roomId} (attempt ${this.reconnectAttempts + 1}/15)...`);
       this.reconnectAttempts++;
       updateUI(); // Update UI to show reconnecting state with attempt count
       this.connect();
@@ -2377,7 +2433,7 @@ class RoomConnection {
 
     // Cancel any ongoing file transfer and notify server
     if (this.currentFileTransfer && this.ws && this.ws.readyState === WebSocket.OPEN) {
-      console.log(`🛑 Canceling file transfer on disconnect: ${this.currentFileTransfer.fileId}`);
+      secureLog(`🛑 Canceling file transfer on disconnect: ${this.currentFileTransfer.fileId}`);
       try {
         this.ws.send(JSON.stringify({
           type: 'file_transfer_cancel',
@@ -2420,6 +2476,42 @@ function applyLanguage(lang) {
 
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
+
+  // Update all nickname colors and avatars when theme changes
+  document.querySelectorAll('.message').forEach(messageDiv => {
+    const isOwn = messageDiv.classList.contains('sent');
+
+    // Update nickname color (only for received messages)
+    const senderEl = messageDiv.querySelector('.message-sender');
+    if (senderEl && !isOwn) {
+      const nickname = senderEl.textContent;
+      senderEl.style.color = getNicknameColor(nickname);
+    }
+
+    // Update avatar for all messages
+    const avatarEl = messageDiv.querySelector('.message-avatar');
+    if (avatarEl && senderEl) {
+      const nickname = senderEl.textContent;
+      avatarEl.src = generateAvatar(nickname);
+    }
+  });
+
+  // Update user list avatars
+  document.querySelectorAll('.user-list-item').forEach(userItem => {
+    const nicknameEl = userItem.querySelector('div');
+    const avatarEl = userItem.querySelector('.user-list-avatar');
+    if (nicknameEl && avatarEl) {
+      const nickname = nicknameEl.textContent;
+      avatarEl.src = generateAvatar(nickname);
+    }
+  });
+
+  // Update user card avatar
+  const userAvatar = document.getElementById('userAvatar');
+  const userNickname = document.getElementById('userNickname');
+  if (userAvatar && userNickname) {
+    userAvatar.src = generateAvatar(userNickname.textContent);
+  }
 }
 
 function formatFileSize(bytes) {
@@ -2859,10 +2951,10 @@ function switchRoom(roomId) {
 }
 
 async function joinRoom(nickname, roomId, password) {
-  console.log(`🔵 joinRoom called: nickname="${nickname}", roomId="${roomId}", hasPassword=${!!password}`);
+  secureLog(`🔵 joinRoom called: nickname="${nickname}", roomId="${roomId}", hasPassword=${!!password}`);
 
   if (state.rooms.has(roomId)) {
-    console.log(`🔵 Room ${roomId} already exists, switching to it`);
+    secureLog(`🔵 Room ${roomId} already exists, switching to it`);
     switchRoom(roomId);
     return;
   }
@@ -2886,7 +2978,7 @@ async function joinRoom(nickname, roomId, password) {
     }
   }
 
-  console.log(`🔵 Creating new RoomConnection for ${roomId} with nickname ${nickname}`);
+  secureLog(`🔵 Creating new RoomConnection for ${roomId} with nickname ${nickname}`);
   const room = new RoomConnection(roomId, nickname, password);
   state.rooms.set(roomId, room);
 
@@ -3014,9 +3106,9 @@ async function exportBackup() {
     messages: messagesToExport  // Contains file metadata only (blob excluded)
   };
 
-  console.log(`📦 Exporting backup v2: ${roomsToExport.length} room(s), ${messagesToExport.length} message(s)`);
-  console.log('⚠️  File blobs are NOT included in backup - only metadata');
-  console.log('Rooms:', roomsToExport.map(r => `${r.roomId} (${r.nickname})`));
+  secureLog(`📦 Exporting backup v2: ${roomsToExport.length} room(s), ${messagesToExport.length} message(s)`);
+  secureLog('⚠️  File blobs are NOT included in backup - only metadata');
+  secureLog('Rooms:', roomsToExport.map(r => `${r.roomId} (${r.nickname})`));
 
   // Encrypt backup with strong password
   let password = await showPasswordModal(
@@ -3067,7 +3159,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Check for URL fragment with room invite
   const fragmentData = CryptoHelper.parseSecureShareLink();
   if (fragmentData && fragmentData.roomId) {
-    console.log('🔗 Detected room invite from URL fragment (password not sent to server)');
+    secureLog('🔗 Detected room invite from URL fragment (password not sent to server)');
     // Store in sessionStorage for later use
     sessionStorage.setItem('fragmentInvite', JSON.stringify(fragmentData));
     // Clear the fragment from URL for security
@@ -3114,7 +3206,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const key = await CryptoHelper.deriveKey(password, Array.from(salt).join(''), 200000);
         const decrypted = await CryptoHelper.decrypt(backup.encrypted, key);
 
-        console.log(`🔓 Decrypted backup data (v${backup.version || 1}):`, decrypted);
+        secureLog(`🔓 Decrypted backup data (v${backup.version || 1}):`, decrypted);
 
         // Validate decrypted data
         if (!decrypted.rooms || !Array.isArray(decrypted.rooms)) {
@@ -3124,11 +3216,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Import data based on version
         if (backup.version === 2) {
           // v2 format: rooms have passwords, need to re-derive keys
-          console.log('📥 Importing v2 backup (re-deriving keys from passwords)');
+          secureLog('📥 Importing v2 backup (re-deriving keys from passwords)');
           await dbManager.importData(decrypted);
         } else {
           // v1 format (legacy): rooms have encryptionKeyData/storageKeyData
-          console.log('📥 Importing v1 backup (legacy format with exported keys)');
+          secureLog('📥 Importing v1 backup (legacy format with exported keys)');
           await dbManager.importData(decrypted);
         }
 
@@ -3139,7 +3231,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         sessionStorage.removeItem('pendingBackupImport');
         sessionStorage.removeItem('backupFileData');
 
-        console.log('✅ Backup imported successfully, rooms:', importedRooms);
+        secureLog('✅ Backup imported successfully, rooms:', importedRooms);
       } catch (err) {
         console.error('❌ Import failed:', err);
         alert(t('alert.importFailed'));
@@ -3156,7 +3248,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Load saved rooms from IndexedDB
   const savedRooms = await dbManager.getAllRooms();
-  console.log('🔍 Loaded saved rooms from IndexedDB:', savedRooms);
+  secureLog('🔍 Loaded saved rooms from IndexedDB:', savedRooms);
 
   // Check for initial room from login page
   const initialRoomJson = sessionStorage.getItem('initialRoom');
@@ -3165,14 +3257,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     sessionStorage.removeItem('initialRoom');
     state.currentNickname = initialRoom.nickname;
     sessionStorage.setItem('currentNickname', state.currentNickname);
-    console.log('🔍 Set nickname from initial room:', state.currentNickname);
+    secureLog('🔍 Set nickname from initial room:', state.currentNickname);
   }
 
   // If backup was just imported, use imported rooms data directly
   if (backupImported && importedRooms && importedRooms.length > 0) {
     state.currentNickname = importedRooms[0].nickname;
     sessionStorage.setItem('currentNickname', state.currentNickname);
-    console.log('✅ Backup imported, setting nickname to:', state.currentNickname);
+    secureLog('✅ Backup imported, setting nickname to:', state.currentNickname);
   } else if (backupImported) {
     console.error('❌ Backup imported but no rooms found!');
   }
@@ -3181,17 +3273,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!state.currentNickname && savedRooms.length > 0) {
     state.currentNickname = savedRooms[0].nickname;
     sessionStorage.setItem('currentNickname', state.currentNickname);
-    console.log('✅ Set nickname from saved rooms:', state.currentNickname);
+    secureLog('✅ Set nickname from saved rooms:', state.currentNickname);
   }
 
   // If no nickname in session, redirect to login
   if (!state.currentNickname) {
-    console.log('❌ No nickname found, redirecting to login');
+    secureLog('❌ No nickname found, redirecting to login');
     window.location.href = '/';
     return;
   }
 
-  console.log('✅ Current nickname:', state.currentNickname);
+  secureLog('✅ Current nickname:', state.currentNickname);
 
   // Apply saved settings
   applyTheme(state.theme);
@@ -3211,11 +3303,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Auto-reconnect ALL rooms if backup was imported
   if (backupImported && importedRooms && importedRooms.length > 0) {
-    console.log('🔄 Auto-reconnecting all imported rooms:', importedRooms.map(r => `${r.roomId} (${r.nickname})`));
+    secureLog('🔄 Auto-reconnecting all imported rooms:', importedRooms.map(r => `${r.roomId} (${r.nickname})`));
     for (const roomData of importedRooms) {
       try {
         await joinRoom(roomData.nickname, roomData.roomId, roomData.password);
-        console.log(`✅ Rejoined room: ${roomData.roomId} as ${roomData.nickname}`);
+        secureLog(`✅ Rejoined room: ${roomData.roomId} as ${roomData.nickname}`);
       } catch (err) {
         console.error(`❌ Failed to rejoin room ${roomData.roomId}:`, err);
       }
@@ -3236,10 +3328,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Network online/offline event listeners for better reconnection
   window.addEventListener('online', () => {
-    console.log('🌐 Network restored, resetting reconnection attempts...');
+    secureLog('🌐 Network restored, resetting reconnection attempts...');
     state.rooms.forEach((room, roomId) => {
       if (room.ws && room.ws.readyState === WebSocket.CLOSED) {
-        console.log(`🔄 Network online, reconnecting to room ${roomId}`);
+        secureLog(`🔄 Network online, reconnecting to room ${roomId}`);
         room.reconnectAttempts = 0; // Reset attempts when network restored
         room.shouldReconnect = true;
         room.connect();
@@ -3248,37 +3340,37 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   window.addEventListener('offline', () => {
-    console.log('📡 Network offline detected');
+    secureLog('📡 Network offline detected');
     updateUI(); // Update UI to show offline status
   });
 
   // Handle page visibility changes (mobile lock screen, app switching)
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
-      console.log('📱 Page became visible, checking connections...');
+      secureLog('📱 Page became visible, checking connections...');
 
       // Check all rooms and reconnect if needed
       state.rooms.forEach((room, roomId) => {
         // Only reconnect if WebSocket is CLOSED (not CONNECTING or OPEN)
         if (room.ws && room.ws.readyState === WebSocket.CLOSED) {
-          console.log(`🔄 Reconnecting to room ${roomId} after page became visible`);
+          secureLog(`🔄 Reconnecting to room ${roomId} after page became visible`);
           room.shouldReconnect = true;
           room.reconnectAttempts = 0; // Reset attempts when user returns
           room.connect();
         }
       });
     } else {
-      console.log('📱 Page became hidden');
+      secureLog('📱 Page became hidden');
     }
   });
 
   // Also check on focus (additional safety net)
   window.addEventListener('focus', () => {
-    console.log('👀 Window focused, checking connections...');
+    secureLog('👀 Window focused, checking connections...');
     state.rooms.forEach((room, roomId) => {
       // Only reconnect if WebSocket is CLOSED (not CONNECTING or OPEN)
       if (room.ws && room.ws.readyState === WebSocket.CLOSED) {
-        console.log(`🔄 Reconnecting to room ${roomId} after window focus`);
+        secureLog(`🔄 Reconnecting to room ${roomId} after window focus`);
         room.shouldReconnect = true;
         room.reconnectAttempts = 0;
         room.connect();
@@ -3328,7 +3420,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const roomId = document.getElementById('newRoomId').value.trim();
     const password = document.getElementById('newRoomPassword').value;
 
-    console.log(`🟢 Form submitted: nickname="${nickname}", roomId="${roomId}"`);
+    secureLog(`🟢 Form submitted: nickname="${nickname}", roomId="${roomId}"`);
 
     // Validation
     if (!nickname || !roomId) {
@@ -3338,7 +3430,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Check if already in this room - if so, just switch to it
     if (state.rooms.has(roomId)) {
-      console.log(`🟢 Already in room ${roomId}, just switching`);
+      secureLog(`🟢 Already in room ${roomId}, just switching`);
       switchRoom(roomId);
       document.getElementById('addRoomModal').classList.remove('active');
       document.getElementById('addRoomForm').reset();
@@ -3615,7 +3707,7 @@ function closeFileTransfer(fileId) {
 
   // If this is an active file transfer, cancel it
   if (room && room.currentFileTransfer?.fileId === fileId && room.currentFileTransfer.direction === 'send') {
-    console.log(`🛑 Canceling file transfer: ${fileId}`);
+    secureLog(`🛑 Canceling file transfer: ${fileId}`);
 
     // Stop the transfer
     room.currentFileTransfer = null;

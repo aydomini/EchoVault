@@ -1,4 +1,11 @@
 // ChatRoom Durable Object - handles WebSocket connections for each room
+
+// Production mode control (disable sensitive logs in production)
+const PRODUCTION_MODE = true; // Set to false for debugging
+const secureLog = (...args) => {
+  if (!PRODUCTION_MODE) secureLog(...args);
+};
+
 export class ChatRoom {
   constructor(state, env) {
     this.state = state;
@@ -139,12 +146,12 @@ export class ChatRoom {
     // Check if slot available
     if (this.activeFileTransfers.size < this.maxConcurrentFileTransfers) {
       this.activeFileTransfers.add(connectionId);
-      console.log(`✅ File transfer slot granted to ${connectionId} (${this.activeFileTransfers.size}/${this.maxConcurrentFileTransfers})`);
+      secureLog(`✅ File transfer slot granted to ${connectionId} (${this.activeFileTransfers.size}/${this.maxConcurrentFileTransfers})`);
       return { allowed: true };
     }
 
     // No slots available - reject
-    console.log(`❌ File transfer rejected for ${connectionId} (${this.activeFileTransfers.size}/${this.maxConcurrentFileTransfers} active)`);
+    secureLog(`❌ File transfer rejected for ${connectionId} (${this.activeFileTransfers.size}/${this.maxConcurrentFileTransfers} active)`);
     return {
       allowed: false,
       reason: 'TOO_MANY_TRANSFERS',
@@ -156,7 +163,7 @@ export class ChatRoom {
   releaseFileTransferSlot(connectionId) {
     if (this.activeFileTransfers.has(connectionId)) {
       this.activeFileTransfers.delete(connectionId);
-      console.log(`🔓 File transfer slot released by ${connectionId} (${this.activeFileTransfers.size}/${this.maxConcurrentFileTransfers})`);
+      secureLog(`🔓 File transfer slot released by ${connectionId} (${this.activeFileTransfers.size}/${this.maxConcurrentFileTransfers})`);
     }
   }
 
@@ -191,7 +198,7 @@ export class ChatRoom {
 
     // 1. 检查总连接数
     if (this.connections.size >= this.maxConnections) {
-      console.log(`[Reject] Room full (${this.connections.size} connections)`);
+      secureLog(`[Reject] Room full (${this.connections.size} connections)`);
       ws.send(JSON.stringify({
         type: 'error',
         code: 'ROOM_FULL',
@@ -204,7 +211,7 @@ export class ChatRoom {
     // 2. 检查单 IP 连接数
     const ipCount = this.ipConnectionCount.get(clientIP) || 0;
     if (ipCount >= this.maxConnectionsPerIP) {
-      console.log(`[Reject] Too many connections from IP: ${clientIP}`);
+      secureLog(`[Reject] Too many connections from IP: ${clientIP}`);
       ws.send(JSON.stringify({
         type: 'error',
         code: 'TOO_MANY_CONNECTIONS',
@@ -217,7 +224,7 @@ export class ChatRoom {
     // 3. 验证昵称
     const nicknameValidation = this.validateNickname(nickname);
     if (!nicknameValidation.valid) {
-      console.log(`[Reject] Invalid nickname: ${nickname} - ${nicknameValidation.error}`);
+      secureLog(`[Reject] Invalid nickname: ${nickname} - ${nicknameValidation.error}`);
       ws.send(JSON.stringify({
         type: 'error',
         code: 'INVALID_NICKNAME',
@@ -229,7 +236,7 @@ export class ChatRoom {
 
     // 4. 验证 UUID 格式
     if (deviceId && !this.validateUUID(deviceId)) {
-      console.log(`[Reject] Invalid device ID: ${deviceId}`);
+      secureLog(`[Reject] Invalid device ID: ${deviceId}`);
       ws.send(JSON.stringify({
         type: 'error',
         code: 'INVALID_DEVICE_ID',
@@ -240,7 +247,7 @@ export class ChatRoom {
     }
 
     if (sessionId && !this.validateUUID(sessionId)) {
-      console.log(`[Reject] Invalid session ID: ${sessionId}`);
+      secureLog(`[Reject] Invalid session ID: ${sessionId}`);
       ws.send(JSON.stringify({
         type: 'error',
         code: 'INVALID_SESSION_ID',
@@ -250,7 +257,7 @@ export class ChatRoom {
       return;
     }
 
-    console.log(`[Connect] ${nickname} (IP: ${clientIP}, device: ${deviceId}, session: ${sessionId}) joined with ID ${connectionId}`);
+    secureLog(`[Connect] ${nickname} (IP: ${clientIP}, device: ${deviceId}, session: ${sessionId}) joined with ID ${connectionId}`);
 
     // Check for duplicate nickname in this room
     for (const [existingConnId, existingConn] of this.connections) {
@@ -261,7 +268,7 @@ export class ChatRoom {
 
         if (sameDevice && sameSession) {
           // Same nickname + same device + same session = user refreshing, kick old connection
-          console.log(`[Kick] ${nickname} refreshing same tab, kicking old connection ${existingConnId}`);
+          secureLog(`[Kick] ${nickname} refreshing same tab, kicking old connection ${existingConnId}`);
           try {
             existingConn.ws.send(JSON.stringify({
               type: 'kicked',
@@ -275,7 +282,7 @@ export class ChatRoom {
           this.connections.delete(existingConnId);
         } else if (sameDevice && !sameSession) {
           // Same nickname + same device + different session = different tab in same browser, reject
-          console.log(`[Reject] ${nickname} already in use in another tab of the same browser`);
+          secureLog(`[Reject] ${nickname} already in use in another tab of the same browser`);
           ws.send(JSON.stringify({
             type: 'error',
             code: 'NICKNAME_IN_USE',
@@ -285,7 +292,7 @@ export class ChatRoom {
           return;
         } else if (!sameDevice) {
           // Same nickname + different device = user login from another device, kick old connection
-          console.log(`[Kick] ${nickname} logging in from different device, kicking old connection ${existingConnId}`);
+          secureLog(`[Kick] ${nickname} logging in from different device, kicking old connection ${existingConnId}`);
           try {
             existingConn.ws.send(JSON.stringify({
               type: 'kicked',
@@ -403,7 +410,7 @@ export class ChatRoom {
               if (data.ecdhPublicKey) {
                 connection.ecdhPublicKey = data.ecdhPublicKey;
               }
-              console.log(`[PublicKey] Stored public keys for ${connection.nickname} (${connectionId})`);
+              secureLog(`[PublicKey] Stored public keys for ${connection.nickname} (${connectionId})`);
             }
 
             // Broadcast public keys to all other users
@@ -435,7 +442,7 @@ export class ChatRoom {
               return;
             }
 
-            console.log(`[Message] from ${messageNickname} (${connectionId}), broadcasting to ${this.connections.size} connections`);
+            secureLog(`[Message] from ${messageNickname} (${connectionId}), broadcasting to ${this.connections.size} connections`);
 
             // Broadcast message with encrypted nicknames
             // Each recipient will get the encrypted nickname meant for them
@@ -489,7 +496,7 @@ export class ChatRoom {
 
           case 'file_transfer_cancel':
             // User cancelled file transfer
-            console.log(`🛑 File transfer cancelled by ${connectionId}, fileId: ${data.fileId}`);
+            secureLog(`🛑 File transfer cancelled by ${connectionId}, fileId: ${data.fileId}`);
             this.releaseFileTransferSlot(connectionId);
 
             // Broadcast cancellation to all other users
@@ -522,7 +529,7 @@ export class ChatRoom {
               fileConn.lastHeartbeat = Date.now();
               // Log every 50th chunk to avoid spam
               if (data.chunkIndex % 50 === 0) {
-                console.log(`💓 Updated heartbeat for ${fileNickname} (chunk ${data.chunkIndex + 1}/${data.totalChunks})`);
+                secureLog(`💓 Updated heartbeat for ${fileNickname} (chunk ${data.chunkIndex + 1}/${data.totalChunks})`);
               }
             }
 
@@ -539,7 +546,7 @@ export class ChatRoom {
             }
 
             // Relay file chunk
-            console.log(`📡 Broadcasting chunk ${data.chunkIndex + 1}/${data.totalChunks} from ${fileNickname}`);
+            secureLog(`📡 Broadcasting chunk ${data.chunkIndex + 1}/${data.totalChunks} from ${fileNickname}`);
             this.broadcast({
               type: 'file_chunk',
               from: fileNickname,
@@ -553,7 +560,7 @@ export class ChatRoom {
             break;
 
           default:
-            console.log('Unknown message type:', data.type);
+            secureLog('Unknown message type:', data.type);
         }
       } catch (err) {
         console.error('Error handling message:', err);
@@ -562,7 +569,7 @@ export class ChatRoom {
 
     // Handle close
     ws.addEventListener('close', () => {
-      console.log(`[Disconnect] ${nickname} (${connectionId}) left, total connections: ${this.connections.size - 1}`);
+      secureLog(`[Disconnect] ${nickname} (${connectionId}) left, total connections: ${this.connections.size - 1}`);
 
       // 清理 IP 连接计数
       const conn = this.connections.get(connectionId);
@@ -641,7 +648,7 @@ export class ChatRoom {
         const timeout = timeSinceLastBeat > 60000 ? 90000 : 60000;
 
         if (timeSinceLastBeat > timeout) {
-          console.log(`Closing stale connection: ${connId} (idle: ${Math.round(timeSinceLastBeat/1000)}s)`);
+          secureLog(`Closing stale connection: ${connId} (idle: ${Math.round(timeSinceLastBeat/1000)}s)`);
           try {
             conn.ws.close(1000, 'Heartbeat timeout');
           } catch (err) {
@@ -670,9 +677,9 @@ export class ChatRoom {
     if (this.connections.size === 0) {
       // Room is empty, start cleanup timer
       if (!this.idleCleanupTimer) {
-        console.log(`[Idle Cleanup] Room is now empty, scheduling cleanup in ${this.idleCleanupDelay / 1000} seconds`);
+        secureLog(`[Idle Cleanup] Room is now empty, scheduling cleanup in ${this.idleCleanupDelay / 1000} seconds`);
         this.idleCleanupTimer = setTimeout(() => {
-          console.log('[Idle Cleanup] Executing room cleanup - destroying Durable Object');
+          secureLog('[Idle Cleanup] Executing room cleanup - destroying Durable Object');
           // Note: In Cloudflare Workers, the Durable Object will be automatically
           // garbage collected when inactive. We just clean up our state.
           this.connections.clear();
@@ -683,7 +690,7 @@ export class ChatRoom {
           if (this.heartbeatInterval) {
             clearInterval(this.heartbeatInterval);
           }
-          console.log('[Idle Cleanup] Room cleanup complete');
+          secureLog('[Idle Cleanup] Room cleanup complete');
         }, this.idleCleanupDelay);
       }
     }
@@ -691,7 +698,7 @@ export class ChatRoom {
 
   cancelIdleCleanup() {
     if (this.idleCleanupTimer) {
-      console.log('[Idle Cleanup] Canceling cleanup timer - user joined');
+      secureLog('[Idle Cleanup] Canceling cleanup timer - user joined');
       clearTimeout(this.idleCleanupTimer);
       this.idleCleanupTimer = null;
     }

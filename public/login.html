@@ -393,9 +393,16 @@
       }
     };
 
-    // Load settings
+    // Load settings with system preference detection
     let currentLang = localStorage.getItem('language') || 'zh';
-    let currentTheme = localStorage.getItem('theme') || 'light';
+
+    // Auto-detect system theme preference if no saved preference
+    let currentTheme = localStorage.getItem('theme');
+    if (!currentTheme) {
+      // Check system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      currentTheme = prefersDark ? 'dark' : 'light';
+    }
 
     // Apply theme
     const themeIconPath = document.querySelector('#themeIcon path');

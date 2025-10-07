@@ -25,3 +25,6 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Claude AI memory (local only)
+.claude/memory.md
