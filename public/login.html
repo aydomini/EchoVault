@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' wss: https:; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self';">
+  <title>EchoVault - 端到端加密聊天</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #f5f5f5;
+      --bg-secondary: #ffffff;
+      --text-primary: #333333;
+      --text-secondary: #666666;
+      --accent: #007bff;
+      --accent-hover: #0056b3;
+      --border: #e0e0e0;
+      --shadow: rgba(0, 0, 0, 0.1);
+    }
+
+    [data-theme="dark"] {
+      --bg-primary: #1a1a1a;
+      --bg-secondary: #2d2d2d;
+      --text-primary: #e0e0e0;
+      --text-secondary: #a0a0a0;
+      --accent: #4a9eff;
+      --accent-hover: #357abd;
+      --border: #404040;
+      --shadow: rgba(0, 0, 0, 0.3);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5vh 20px;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .container {
+      background: var(--bg-secondary);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px var(--shadow);
+      padding: 32px;
+      width: 360px;
+      height: 90vh;
+      max-height: 800px;
+      display: flex;
+      flex-direction: column;
+      transition: background 0.3s;
+      position: relative;
+    }
+
+    .top-actions {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      display: flex;
+      gap: 8px;
+      z-index: 100;
+    }
+
+    .icon-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      opacity: 0.6;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      cursor: pointer;
+      position: relative;
+      z-index: 101;
+    }
+
+    .icon-btn svg {
+      pointer-events: none;
+    }
+
+    .icon-btn:hover {
+      opacity: 1;
+      background: rgba(108, 117, 125, 0.1);
+      color: #6c757d;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-top: 12px;
+    }
+
+    .logo {
+      font-size: 32px;
+    }
+
+    .title-section {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: 16px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      transition: border 0.3s, background 0.3s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .optional {
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: normal;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: var(--accent-hover);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .form-container {
+      flex: 1;
+      overflow-y: auto;
+      margin-bottom: 16px;
+    }
+
+    .info {
+      margin-top: 24px;
+      padding: 16px;
+      background: var(--bg-primary);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .info strong {
+      color: var(--text-primary);
+    }
+
+    .import-backup-btn {
+      width: 100%;
+      padding: 12px 24px;
+      margin-top: 16px;
+      background: transparent;
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .import-backup-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(88, 101, 242, 0.1);
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 5vh 15px;
+      }
+    }
+
+    @media (max-height: 600px) {
+      .container {
+        height: auto;
+        max-height: 95vh;
+      }
+    }
+
+    /* Animations for share link notification */
+    @keyframes slideDown {
+      from {
+        transform: translateX(-50%) translateY(-100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(-50%) translateY(-100%);
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="top-actions">
+      <button class="icon-btn" id="themeToggle" title="Toggle theme">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="themeIcon">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+      <button class="icon-btn" id="langToggle" title="Switch language">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div class="header">
+      <div class="logo">🔐</div>
+      <div class="title-section">
+        <h1 data-i18n="login.title">EchoVault</h1>
+        <p class="subtitle" data-i18n="login.subtitle">端到端加密聊天室</p>
+      </div>
+    </div>
+
+    <div class="form-container">
+      <form id="loginForm">
+      <div class="form-group">
+        <label for="nickname" data-i18n="login.nickname">用户昵称</label>
+        <input
+          type="text"
+          id="nickname"
+          required
+          maxlength="10"
+          autofocus
+          data-i18n-placeholder="login.nicknamePlaceholder"
+          placeholder="输入您的昵称"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="roomId" data-i18n="login.roomId">房间ID</label>
+        <input
+          type="text"
+          id="roomId"
+          required
+          maxlength="10"
+          data-i18n-placeholder="login.roomIdPlaceholder"
+          placeholder="输入或创建房间ID"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="roomPassword">
+          <span data-i18n="login.roomPassword">房间密码</span>
+          <span class="optional" data-i18n="login.optional">(可选)</span>
+        </label>
+        <input
+          type="password"
+          id="roomPassword"
+          maxlength="20"
+          data-i18n-placeholder="login.roomPasswordPlaceholder"
+          placeholder="用于端到端加密"
+        >
+      </div>
+
+      <button type="submit" data-i18n="login.joinButton">加入房间</button>
+    </form>
+
+    <button id="importBackupBtn" class="import-backup-btn" data-i18n="login.importBackup">📥 导入备份</button>
+    <input type="file" id="importBackupFile" accept=".encrypted,.json,application/json,application/octet-stream" style="display: none;">
+
+    <!-- Alternative iOS-compatible import area -->
+    <div id="dropZone" style="
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 10px 0;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: none;
+    ">
+      <div data-i18n="login.dropZone">📁 拖拽备份文件到此处或点击选择</div>
+      <input type="file" id="fallbackFileInput" accept=".encrypted,.json,application/json,application/octet-stream" style="display: none;">
+    </div>
+
+    <div class="info">
+      <strong data-i18n="info.security">🔒 隐私与安全</strong><br>
+      <span data-i18n="info.description">
+        所有消息均使用端到端加密，服务器无法读取内容。
+        房间密码仅存储在您的浏览器中，永不上传。
+      </span>
+    </div>
+    </div>
+  </div>
+
+  <script>
+    // i18n translations
+    const translations = {
+      zh: {
+        'login.title': 'EchoVault',
+        'login.subtitle': '端到端加密聊天室',
+        'login.nickname': '用户昵称',
+        'login.nicknamePlaceholder': '输入您的昵称',
+        'login.roomId': '房间ID',
+        'login.roomIdPlaceholder': '输入或创建房间ID',
+        'login.roomPassword': '房间密码',
+        'login.optional': '(可选)',
+        'login.roomPasswordPlaceholder': '用于端到端加密',
+        'login.joinButton': '加入房间',
+        'login.importBackup': '📥 导入备份',
+        'login.dropZone': '📁 拖拽备份文件到此处或点击选择',
+        'settings.theme': '夜间模式',
+        'info.security': '🔒 隐私与安全',
+        'info.description': '所有消息均使用端到端加密，服务器无法读取内容。房间密码仅存储在您的浏览器中，永不上传。'
+      },
+      en: {
+        'login.title': 'EchoVault',
+        'login.subtitle': 'End-to-End Encrypted Chat',
+        'login.nickname': 'Nickname',
+        'login.nicknamePlaceholder': 'Enter your nickname',
+        'login.roomId': 'Room ID',
+        'login.roomIdPlaceholder': 'Enter or create room ID',
+        'login.roomPassword': 'Room Password',
+        'login.optional': '(Optional)',
+        'login.roomPasswordPlaceholder': 'For end-to-end encryption',
+        'login.joinButton': 'Join Room',
+        'login.importBackup': '📥 Import Backup',
+        'login.dropZone': '📁 Drag backup file here or click to select',
+        'settings.theme': 'Dark Mode',
+        'info.security': '🔒 Privacy & Security',
+        'info.description': 'All messages are end-to-end encrypted. The server cannot read your content. Room passwords are stored only in your browser and never uploaded.'
+      }
+    };
+
+    // Load settings with system preference detection
+    let currentLang = localStorage.getItem('language') || 'zh';
+
+    // Auto-detect system theme preference if no saved preference
+    let currentTheme = localStorage.getItem('theme');
+    if (!currentTheme) {
+      // Check system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      currentTheme = prefersDark ? 'dark' : 'light';
+    }
+
+    // Apply theme
+    const themeIconPath = document.querySelector('#themeIcon path');
+    if (currentTheme === 'dark' && themeIconPath) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      // Sun icon for dark mode
+      themeIconPath.setAttribute('d', 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z');
+    }
+
+    // Apply language
+    function applyLanguage(lang) {
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (translations[lang][key]) {
+          el.textContent = translations[lang][key];
+        }
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (translations[lang][key]) {
+          el.placeholder = translations[lang][key];
+        }
+      });
+    }
+
+    applyLanguage(currentLang);
+
+    // Check for shared room link (/?join=base64data)
+    const urlParams = new URLSearchParams(window.location.search);
+    const joinParam = urlParams.get('join');
+    if (joinParam) {
+      try {
+        // Decode base64
+        const jsonStr = decodeURIComponent(escape(atob(joinParam)));
+        const shareData = JSON.parse(jsonStr);
+
+        // Auto-fill room info
+        if (shareData.roomId) {
+          document.getElementById('roomId').value = shareData.roomId;
+        }
+        if (shareData.password) {
+          document.getElementById('roomPassword').value = shareData.password;
+        }
+
+        // Show hint
+        const hint = currentLang === 'zh'
+          ? '已自动填充房间信息，请输入您的昵称后加入'
+          : 'Room info auto-filled. Please enter your nickname to join';
+        alert(hint);
+
+        // Focus on nickname field
+        document.getElementById('nickname').focus();
+      } catch (err) {
+        console.error('Failed to parse share link:', err);
+      }
+    }
+
+    // Theme toggle
+    const themeToggleBtn = document.getElementById('themeToggle');
+    if (themeToggleBtn) {
+      themeToggleBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('Theme button clicked');
+        currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        if (themeIconPath) {
+          if (currentTheme === 'dark') {
+            // Sun icon
+            themeIconPath.setAttribute('d', 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z');
+          } else {
+            // Moon icon
+            themeIconPath.setAttribute('d', 'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z');
+          }
+        }
+        localStorage.setItem('theme', currentTheme);
+        console.log('Theme changed to:', currentTheme);
+      });
+    }
+
+    // Language toggle
+    const langToggleBtn = document.getElementById('langToggle');
+    if (langToggleBtn) {
+      langToggleBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('Language button clicked');
+        currentLang = currentLang === 'zh' ? 'en' : 'zh';
+        localStorage.setItem('language', currentLang);
+        applyLanguage(currentLang);
+        console.log('Language changed to:', currentLang);
+      });
+    }
+
+    // ========================
+    // Password Strength Validation
+    // ========================
+    function validatePasswordStrength(password, isBackup = false) {
+      const minLength = isBackup ? 12 : 8;
+
+      if (!password || password.length === 0) {
+        return {
+          valid: false,
+          error: currentLang === 'zh' ? '密码不能为空' : 'Password cannot be empty'
+        };
+      }
+
+      if (password.length < minLength) {
+        return {
+          valid: false,
+          error: currentLang === 'zh'
+            ? `密码至少${minLength}个字符`
+            : `Password must be at least ${minLength} characters`
+        };
+      }
+
+      const hasLetter = /[a-zA-Z]/.test(password);
+      const hasNumber = /[0-9]/.test(password);
+
+      if (!hasLetter || !hasNumber) {
+        return {
+          valid: false,
+          error: currentLang === 'zh'
+            ? '密码必须包含字母和数字'
+            : 'Password must contain both letters and numbers'
+        };
+      }
+
+      const weakPasswords = [
+        '12345678', 'password', 'qwerty123', 'abc123456',
+        'password1', 'password123', '11111111', '00000000',
+        'asdfghjk', 'qwertyuiop'
+      ];
+
+      if (weakPasswords.includes(password.toLowerCase())) {
+        return {
+          valid: false,
+          error: currentLang === 'zh'
+            ? '密码过于简单，请使用更复杂的密码'
+            : 'Password is too weak, please use a stronger password'
+        };
+      }
+
+      return { valid: true };
+    }
+
+    // Form submission
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const nickname = document.getElementById('nickname').value.trim();
+      const roomId = document.getElementById('roomId').value.trim();
+      const roomPassword = document.getElementById('roomPassword').value;
+
+      // Validation
+      if (!nickname || !roomId) {
+        alert(currentLang === 'zh' ? '请填写昵称和房间ID' : 'Please enter nickname and room ID');
+        return;
+      }
+
+      // Check for spaces
+      if (nickname.includes(' ') || roomId.includes(' ') || roomPassword.includes(' ')) {
+        alert(currentLang === 'zh' ? '昵称、房间ID和密码不能包含空格' : 'Nickname, Room ID and password cannot contain spaces');
+        return;
+      }
+
+      // Check length limits
+      if (nickname.length > 10) {
+        alert(currentLang === 'zh' ? '昵称不能超过10个字符' : 'Nickname cannot exceed 10 characters');
+        return;
+      }
+
+      if (roomId.length > 10) {
+        alert(currentLang === 'zh' ? '房间ID不能超过10个字符' : 'Room ID cannot exceed 10 characters');
+        return;
+      }
+
+      if (roomPassword.length > 20) {
+        alert(currentLang === 'zh' ? '房间密码不能超过20个字符' : 'Room password cannot exceed 20 characters');
+        return;
+      }
+
+      // Password strength check (friendly warning)
+      if (roomPassword) {
+        const validation = validatePasswordStrength(roomPassword, false);
+        if (!validation.valid) {
+          const warningMessage = (currentLang === 'zh' ? '⚠️ 密码强度较弱\n\n' : '⚠️ Weak Password Detected\n\n') +
+            validation.error + '\n\n' +
+            (currentLang === 'zh'
+              ? '弱密码可能被破解，建议使用更复杂的密码。\n\n是否仍要继续？'
+              : 'Weak passwords can be easily cracked. We recommend using a stronger password.\n\nContinue anyway?');
+
+          if (!confirm(warningMessage)) {
+            return; // User chose to set stronger password
+          }
+        }
+      }
+
+      // Store initial room info
+      const roomInfo = {
+        nickname,
+        roomId,
+        roomPassword,
+        joinedAt: Date.now()
+      };
+
+      // Store in sessionStorage to pass to chat page
+      sessionStorage.setItem('initialRoom', JSON.stringify(roomInfo));
+
+      // Navigate to chat page
+      window.location.href = '/chat.html';
+    });
+
+    // Import backup button
+    document.getElementById('importBackupBtn').addEventListener('click', () => {
+      // Debug: log device info
+      console.log('📱 Device Info:', {
+        userAgent: navigator.userAgent,
+        isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent),
+        isSafari: /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent),
+        isMobile: /Mobi|Android/i.test(navigator.userAgent)
+      });
+
+      // Try multiple methods for iOS compatibility
+      const fileInput = document.getElementById('importBackupFile');
+
+      // Method 1: Direct click (standard)
+      try {
+        fileInput.click();
+      } catch (error) {
+        console.log('❌ Direct click failed:', error);
+
+        // Method 2: Focus then click (iOS workaround)
+        try {
+          fileInput.focus();
+          setTimeout(() => fileInput.click(), 100);
+        } catch (error2) {
+          console.log('❌ Focus + click failed:', error2);
+
+          // Method 3: Create new input element (iOS fallback)
+          try {
+            const newInput = document.createElement('input');
+            newInput.type = 'file';
+            newInput.accept = '*/*';
+            newInput.style.position = 'absolute';
+            newInput.style.left = '-9999px';
+            document.body.appendChild(newInput);
+
+            newInput.addEventListener('change', handleFileSelect);
+            newInput.click();
+          } catch (error3) {
+            console.log('❌ All methods failed:', error3);
+
+            const isZh = document.documentElement.lang === 'zh' ||
+                         navigator.language.includes('zh');
+            const errorMsg = isZh
+              ? '文件选择失败。请尝试：1) 使用其他浏览器 2) 通过邮件/云下载文件 3) 在电脑上导入后分享链接'
+              : 'File selection failed. Please try: 1) Use different browser 2) Download file from email/cloud 3) Import on computer then share link';
+            alert(errorMsg);
+          }
+        }
+      }
+    });
+
+    // Separate file handling function
+    function handleFileSelect(e) {
+      console.log('📁 File selected:', e.target.files);
+
+      const file = e.target.files[0];
+      if (!file) {
+        console.log('❌ No file selected');
+        return;
+      }
+
+      // Debug file info
+      console.log('📄 File details:', {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: file.lastModified
+      });
+
+      // Validate file type for mobile compatibility
+      const fileName = file.name.toLowerCase();
+      const isValidBackupFile = fileName.endsWith('.encrypted') ||
+                               fileName.endsWith('.json') ||
+                               fileName.includes('backup') ||
+                               fileName.includes('echovault');
+
+      if (!isValidBackupFile) {
+        const isZh = document.documentElement.lang === 'zh' ||
+                     navigator.language.includes('zh');
+        const errorMsg = isZh
+          ? '请选择有效的EchoVault备份文件（.encrypted或.json格式）'
+          : 'Please select a valid EchoVault backup file (.encrypted or .json format)';
+        alert(errorMsg);
+        e.target.value = ''; // Clear the file input
+        return;
+      }
+
+      // Check file size (should be reasonable for a backup file)
+      const maxSize = 50 * 1024 * 1024; // 50MB max
+      if (file.size > maxSize) {
+        const isZh = document.documentElement.lang === 'zh' ||
+                     navigator.language.includes('zh');
+        const errorMsg = isZh
+          ? '备份文件过大，请选择小于50MB的文件'
+          : 'Backup file too large, please select a file smaller than 50MB';
+        alert(errorMsg);
+        e.target.value = ''; // Clear the file input
+        return;
+      }
+
+      sessionStorage.setItem('pendingBackupImport', 'true');
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          // Additional validation: try to parse as JSON
+          const content = event.target.result;
+          JSON.parse(content); // Validate JSON format
+
+          sessionStorage.setItem('backupFileData', content);
+          window.location.href = '/chat.html';
+        } catch (error) {
+          const isZh = document.documentElement.lang === 'zh' ||
+                       navigator.language.includes('zh');
+          const errorMsg = isZh
+            ? '无效的备份文件格式，请确保文件未损坏'
+            : 'Invalid backup file format, please ensure the file is not corrupted';
+          alert(errorMsg);
+          e.target.value = ''; // Clear the file input
+        }
+      };
+      reader.onerror = () => {
+        const isZh = document.documentElement.lang === 'zh' ||
+                     navigator.language.includes('zh');
+        const errorMsg = isZh
+          ? '读取文件失败，请重试'
+          : 'Failed to read file, please try again';
+        alert(errorMsg);
+        e.target.value = ''; // Clear the file input
+      };
+      reader.readAsText(file);
+    }
+
+    // Attach event listener to existing file input
+    document.getElementById('importBackupFile').addEventListener('change', handleFileSelect);
+
+    // iOS fallback: Show alternative import method for iOS devices
+    if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+      const dropZone = document.getElementById('dropZone');
+      const importBtn = document.getElementById('importBackupBtn');
+
+      // Don't show fallback import area - the fixed accept attribute should work now
+      // dropZone.style.display = 'block';
+
+      // Add click handler to drop zone
+      dropZone.addEventListener('click', () => {
+        document.getElementById('fallbackFileInput').click();
+      });
+
+      // Fallback file input handler
+      document.getElementById('fallbackFileInput').addEventListener('change', handleFileSelect);
+
+      // Drag and drop handlers
+      dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#007bff';
+        dropZone.style.backgroundColor = '#f0f8ff';
+      });
+
+      dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#ccc';
+        dropZone.style.backgroundColor = 'transparent';
+      });
+
+      dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#ccc';
+        dropZone.style.backgroundColor = 'transparent';
+
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          const fakeEvent = { target: { files: files } };
+          handleFileSelect(fakeEvent);
+        }
+      });
+
+      // Paste support for iOS
+      document.addEventListener('paste', (e) => {
+        const items = e.clipboardData?.items;
+        if (items) {
+          for (let item of items) {
+            if (item.kind === 'file') {
+              e.preventDefault();
+              const file = item.getAsFile();
+              const fakeEvent = { target: { files: [file] } };
+              handleFileSelect(fakeEvent);
+              break;
+            }
+          }
+        }
+      });
+
+      console.log('📱 iOS detected: Alternative import methods enabled');
+    }
+
+    // ========================
+    // Handle Share Link (URL Fragment)
+    // ========================
+    function parseSecureShareLink() {
+      try {
+        // Extract fragment (after #)
+        const hash = window.location.hash;
+        if (!hash.startsWith('#join=')) return null;
+
+        const base64 = hash.substring(6); // Remove '#join='
+        const json = decodeURIComponent(escape(atob(base64)));
+        return JSON.parse(json);
+      } catch (err) {
+        console.error('Failed to parse share link:', err);
+        return null;
+      }
+    }
+
+    // Check if there's a share link on page load
+    window.addEventListener('load', () => {
+      const shareData = parseSecureShareLink();
+      if (shareData && shareData.roomId) {
+        console.log('📎 Detected share link:', shareData.roomId);
+
+        // Auto-fill form fields
+        document.getElementById('roomId').value = shareData.roomId;
+        if (shareData.password) {
+          document.getElementById('roomPassword').value = shareData.password;
+        }
+
+        // Show notification
+        const message = currentLang === 'zh'
+          ? `已自动填充房间信息：${shareData.roomId}`
+          : `Auto-filled room: ${shareData.roomId}`;
+
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+          position: fixed;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: var(--accent);
+          color: white;
+          padding: 12px 24px;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          z-index: 1000;
+          animation: slideDown 0.3s ease;
+        `;
+        notification.textContent = '🔗 ' + message;
+        document.body.appendChild(notification);
+
+        // Remove notification after 3 seconds
+        setTimeout(() => {
+          notification.style.animation = 'slideUp 0.3s ease';
+          setTimeout(() => notification.remove(), 300);
+        }, 3000);
+
+        // Clear hash from URL (optional, for cleaner URL)
+        // window.history.replaceState(null, null, window.location.pathname);
+      }
+    });
+  </script>
+</body>
+</html>
